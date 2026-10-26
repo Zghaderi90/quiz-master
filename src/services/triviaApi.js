@@ -1,6 +1,9 @@
-import he from "he";
-
 const BASE_URL = "https://opentdb.com";
+
+// The API sends text URL-encoded (we ask for this below), e.g. "Don%27t" → "Don't"
+function decode(text) {
+  return decodeURIComponent(text);
+}
 
 // Gets the list of quiz categories from Open Trivia DB
 export async function fetchCategories() {
@@ -40,19 +43,19 @@ function shuffle(array) {
 
 // Turns one question from the API into a cleaner object for our app
 function prepareQuestion(apiQuestion, index) {
-  const correctAnswer = he.decode(apiQuestion.correct_answer);
-  const incorrectAnswers = apiQuestion.incorrect_answers.map((answer) => he.decode(answer));
+  const correctAnswer = decode(apiQuestion.correct_answer);
+  const incorrectAnswers = apiQuestion.incorrect_answers.map((answer) => decode(answer));
 
   return {
     id: index,
-    question: he.decode(apiQuestion.question),
-    category: he.decode(apiQuestion.category),
-    difficulty: apiQuestion.difficulty,
-    type: apiQuestion.type,
+    question: decode(apiQuestion.question),
+    category: decode(apiQuestion.category),
+    difficulty: decode(apiQuestion.difficulty),
+    type: decode(apiQuestion.type),
     correctAnswer,
     // True/False always in the same order; multiple choice shuffled
     answers:
-      apiQuestion.type === "boolean"
+      decode(apiQuestion.type) === "boolean"
         ? ["True", "False"]
         : shuffle([correctAnswer, ...incorrectAnswers]),
   };
@@ -97,6 +100,7 @@ const pendingRequests = new Map();
 // Gets quiz questions with the user's settings
 export function fetchQuestions({ amount, category, difficulty, type }) {
   const params = new URLSearchParams({ amount });
+  params.set("encode", "url3986");
   if (category) params.set("category", category);
   if (difficulty) params.set("difficulty", difficulty);
   if (type) params.set("type", type);
