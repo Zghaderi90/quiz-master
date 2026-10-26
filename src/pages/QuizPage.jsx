@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router";
 import { Alert, Button, Col, Row, Spinner } from "react-bootstrap";
 import QuestionCard from "../components/QuestionCard";
 import { fetchQuestions } from "../services/triviaApi";
+import { saveResult } from "../utils/storage";
 
 export default function QuizPage() {
   const navigate = useNavigate();
@@ -70,15 +71,32 @@ export default function QuizPage() {
     ]);
   }
 
+  function finishQuiz() {
+    const result = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      score: userAnswers.filter((a) => a.isCorrect).length,
+      total: userAnswers.length,
+      // If a category was chosen, all questions are from it
+      category: category ? questions[0].category : "Any category",
+      difficulty: difficulty || "any",
+      type: type || "any",
+      settings: searchParams.toString(), // used by "Play again"
+      answers: userAnswers,
+    };
+
+    saveResult(result);
+
+    // replace: true → the browser's Back button won't return to a finished quiz
+    navigate("/results", { replace: true, state: { result } });
+  }
+
   function handleNext() {
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex((index) => index + 1);
       setSelectedAnswer(null);
     } else {
-      // Quiz finished: go to the Results page and send the answers along
-      navigate("/results", {
-        state: { answers: userAnswers, settings: { amount, category, difficulty, type } },
-      });
+      finishQuiz();
     }
   }
 
